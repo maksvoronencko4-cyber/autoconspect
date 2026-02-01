@@ -1,12 +1,18 @@
 """
-АвтоКонспект Web — Главный сервер
+АвтоКонспект Web — Сервер с AI
 """
 
+import os
 from flask import Flask, render_template, request, jsonify
-from generator.text_generator import TextGenerator
+from dotenv import load_dotenv
+
+# Загрузка переменных окружения
+load_dotenv()
+
+from generator.ai_generator import AIGenerator
 
 app = Flask(__name__)
-generator = TextGenerator()
+generator = AIGenerator()
 
 
 @app.route('/')
@@ -29,6 +35,9 @@ def generate():
         
         if not topic:
             return jsonify({'error': 'Введите тему!'}), 400
+        
+        if not generator.is_ready:
+            return jsonify({'error': 'API ключ не настроен. Обратитесь к администратору.'}), 500
         
         result = generator.generate(
             mode=mode,
@@ -57,10 +66,20 @@ def generate():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/health')
+def health():
+    """Проверка работоспособности"""
+    return jsonify({
+        'status': 'ok',
+        'ai_ready': generator.is_ready
+    })
+
+
 if __name__ == '__main__':
     print("=" * 50)
-    print("📚 АвтоКонспект Web")
+    print("📚 АвтоКонспект Web с AI")
     print("=" * 50)
-    print("Открой в браузере: http://localhost:5000")
+    print(f"AI готов: {generator.is_ready}")
+    print("Открой: http://localhost:5000")
     print("=" * 50)
     app.run(debug=True, host='0.0.0.0', port=5000)

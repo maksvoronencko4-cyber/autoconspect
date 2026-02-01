@@ -1,2 +1,1 @@
-"""Модуль генератора"""
-from .text_generator import TextGenerator
+from .ai_generator import AIGenerator

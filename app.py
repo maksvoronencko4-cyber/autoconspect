@@ -4,26 +4,23 @@
 
 import os
 from flask import Flask, render_template, request, jsonify
-from dotenv import load_dotenv
 
-# Загрузка переменных окружения
-load_dotenv()
+# Загрузка API ключа из переменных окружения
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 from generator.ai_generator import AIGenerator
 
 app = Flask(__name__)
-generator = AIGenerator()
+generator = AIGenerator(GEMINI_API_KEY)
 
 
 @app.route('/')
 def index():
-    """Главная страница"""
     return render_template('index.html')
 
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    """API для генерации текста"""
     try:
         data = request.json
         
@@ -37,7 +34,7 @@ def generate():
             return jsonify({'error': 'Введите тему!'}), 400
         
         if not generator.is_ready:
-            return jsonify({'error': 'API ключ не настроен. Обратитесь к администратору.'}), 500
+            return jsonify({'error': 'API ключ не настроен'}), 500
         
         result = generator.generate(
             mode=mode,
@@ -47,7 +44,6 @@ def generate():
             author_info=author_info
         )
         
-        # Статистика
         words = len(result.split())
         chars = len(result)
         pages = round(chars / 1800, 1)
@@ -66,20 +62,8 @@ def generate():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/health')
-def health():
-    """Проверка работоспособности"""
-    return jsonify({
-        'status': 'ok',
-        'ai_ready': generator.is_ready
-    })
-
-
 if __name__ == '__main__':
     print("=" * 50)
-    print("📚 АвтоКонспект Web с AI")
-    print("=" * 50)
-    print(f"AI готов: {generator.is_ready}")
-    print("Открой: http://localhost:5000")
+    print("📚 АвтоКонспект Web")
     print("=" * 50)
     app.run(debug=True, host='0.0.0.0', port=5000)

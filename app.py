@@ -5,7 +5,6 @@
 import os
 from flask import Flask, render_template, request, jsonify
 
-# Загрузка API ключа из переменных окружения
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 from generator.ai_generator import AIGenerator
@@ -33,9 +32,6 @@ def generate():
         if not topic:
             return jsonify({'error': 'Введите тему!'}), 400
         
-        if not generator.is_ready:
-            return jsonify({'error': 'API ключ не настроен'}), 500
-        
         result = generator.generate(
             mode=mode,
             topic=topic,
@@ -62,8 +58,18 @@ def generate():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/status')
+def status():
+    return jsonify({
+        'api_ready': generator.is_ready,
+        'model': generator.model_name
+    })
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("📚 АвтоКонспект Web")
+    print(f"API готов: {generator.is_ready}")
+    print(f"Модель: {generator.model_name}")
     print("=" * 50)
     app.run(debug=True, host='0.0.0.0', port=5000)

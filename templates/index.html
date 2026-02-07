@@ -12,9 +12,9 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>📚 АвтоКонспект</h1>
-                <span class="version">Pro Edition v2.0</span>
+                <span class="version">Pro Edition v3.0 + Wiki</span>
             </div>
-            
+
             <div class="menu-section">
                 <h3>ГЕНЕРАЦИЯ</h3>
                 <button class="menu-btn active" data-mode="referat">📄 Реферат</button>
@@ -24,15 +24,23 @@
                 <button class="menu-btn" data-mode="retell">📖 Пересказ</button>
                 <button class="menu-btn" data-mode="essay">✍️ Эссе</button>
             </div>
+
+            <div class="menu-section">
+                <h3>ИСТОЧНИКИ</h3>
+                <div class="wiki-status" id="wiki-status">
+                    <span class="wiki-dot"></span>
+                    <span>Wikipedia подключена</span>
+                </div>
+            </div>
         </aside>
-        
+
         <!-- Основная область -->
         <main class="workspace">
             <header class="header">
                 <h2 id="mode-title">📄 Генератор рефератов</h2>
                 <p id="mode-subtitle">Введите тему и получите готовый реферат</p>
             </header>
-            
+
             <!-- Информация об авторе -->
             <section class="author-section" id="author-section">
                 <h3>👤 Информация об авторе</h3>
@@ -84,13 +92,53 @@
                     📑 Добавить титульную страницу
                 </label>
             </section>
-            
+
             <!-- Ввод темы -->
             <section class="input-section">
                 <label id="input-label">📝 Тема реферата:</label>
                 <textarea id="topic-input" placeholder="Введите тему..."></textarea>
             </section>
-            
+
+            <!-- ═══════ ВИКИПЕДИЯ ═══════ -->
+            <section class="wiki-section" id="wiki-section">
+                <div class="wiki-header">
+                    <h3>🌐 Источники из Википедии</h3>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="use-wiki" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Использовать</span>
+                    </label>
+                </div>
+
+                <div class="wiki-body" id="wiki-body">
+                    <div class="wiki-search-row">
+                        <input type="text" id="wiki-query"
+                               placeholder="Поиск в Википедии (или оставьте пустым — возьмёт тему)">
+                        <select id="wiki-lang">
+                            <option value="ru">🇷🇺 RU</option>
+                            <option value="en">🇬🇧 EN</option>
+                        </select>
+                        <button class="btn btn-wiki" id="wiki-search-btn">🔍 Найти</button>
+                    </div>
+
+                    <!-- Индикатор загрузки поиска -->
+                    <div id="wiki-loading" class="wiki-loading hidden">
+                        <div class="spinner-small"></div>
+                        <span>Поиск в Википедии…</span>
+                    </div>
+
+                    <!-- Результаты -->
+                    <div id="wiki-results" class="wiki-results"></div>
+
+                    <!-- Счётчик выбранных -->
+                    <div id="wiki-selected-bar" class="wiki-selected-bar hidden">
+                        📚 Выбрано источников: <strong id="wiki-count">0</strong>
+                        <span class="wiki-hint">(макс. 5)</span>
+                    </div>
+                </div>
+            </section>
+            <!-- ═══════ /ВИКИПЕДИЯ ═══════ -->
+
             <!-- Опции -->
             <section class="options-section">
                 <div class="option">
@@ -112,7 +160,7 @@
                     </select>
                 </div>
             </section>
-            
+
             <!-- Кнопки -->
             <section class="buttons-section">
                 <button class="btn btn-primary" id="generate-btn">✨ Сгенерировать</button>
@@ -120,22 +168,30 @@
                 <button class="btn btn-success" id="copy-btn">📋 Копировать</button>
                 <button class="btn btn-warning" id="download-btn">💾 Скачать</button>
             </section>
-            
+
             <!-- Результат -->
             <section class="result-section">
                 <div class="result-header">
                     <label>📄 Результат:</label>
                     <span id="stats"></span>
                 </div>
+
+                <!-- Бейдж источников -->
+                <div id="wiki-badge" class="wiki-badge hidden">
+                    🌐 Источники: <span id="wiki-badge-count">0</span> статей из Википедии
+                </div>
+
                 <div id="result" class="result-content"></div>
+
                 <div id="loading" class="loading hidden">
                     <div class="spinner"></div>
-                    <span>✨ Генерация текста...</span>
+                    <span>✨ Генерация текста…</span>
+                    <span class="loading-sub" id="loading-sub"></span>
                 </div>
             </section>
         </main>
     </div>
-    
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

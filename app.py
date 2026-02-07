@@ -5,7 +5,12 @@
 import os
 from flask import Flask, render_template, request, jsonify
 
+# Получаем ключ
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
+# Логируем для отладки (без показа самого ключа)
+print(f"🔑 GEMINI_API_KEY найден: {'Да' if GEMINI_API_KEY else 'Нет'}")
+print(f"🔑 Длина ключа: {len(GEMINI_API_KEY)} символов")
 
 from generator.ai_generator import AIGenerator
 
@@ -62,7 +67,9 @@ def generate():
 def status():
     return jsonify({
         'api_ready': generator.is_ready,
-        'model': generator.model_name
+        'model': generator.model_name,
+        'key_exists': bool(GEMINI_API_KEY),
+        'key_length': len(GEMINI_API_KEY)
     })
 
 
@@ -70,6 +77,6 @@ if __name__ == '__main__':
     print("=" * 50)
     print("📚 АвтоКонспект Web")
     print(f"✅ Gemini: {generator.is_ready}")
-    print(f"✅ Wikipedia: Встроена")
+    print(f"✅ Модель: {generator.model_name}")
     print("=" * 50)
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,5 +1,5 @@
 """
-AI Генератор текстов с Google Gemini
+AI Генератор текстов с Google Gemini + Wikipedia
 """
 
 import google.generativeai as genai
@@ -7,21 +7,20 @@ from datetime import datetime
 
 
 class AIGenerator:
-    
+
     def __init__(self, api_key: str = None):
         self.model = None
         self.is_ready = False
         self.model_name = None
-        
+
         if api_key:
             self._init_model(api_key)
-    
+
     def _init_model(self, api_key: str):
         """Инициализация с автоопределением модели"""
         try:
             genai.configure(api_key=api_key)
-            
-            # Список моделей для попытки подключения
+
             models_to_try = [
                 'gemini-1.5-flash',
                 'gemini-1.5-pro',
@@ -30,12 +29,10 @@ class AIGenerator:
                 'models/gemini-pro',
                 'models/gemini-1.5-flash',
             ]
-            
-            # Пробуем найти рабочую модель
+
             for model_name in models_to_try:
                 try:
                     model = genai.GenerativeModel(model_name)
-                    # Тестовый запрос
                     response = model.generate_content("Привет")
                     if response.text:
                         self.model = model
@@ -46,8 +43,7 @@ class AIGenerator:
                 except Exception as e:
                     print(f"❌ Модель {model_name}: {e}")
                     continue
-            
-            # Если ни одна модель не подошла, пробуем получить список
+
             try:
                 available_models = genai.list_models()
                 for m in available_models:
@@ -65,37 +61,37 @@ class AIGenerator:
                             continue
             except Exception as e:
                 print(f"Ошибка получения списка моделей: {e}")
-            
+
             self.is_ready = False
-            
+
         except Exception as e:
             print(f"Ошибка инициализации API: {e}")
             self.is_ready = False
-    
-    def generate(self, mode: str, topic: str, volume: str, style: str, author_info: dict = None) -> str:
-        
+
+    # ──────────────────────────────────────────────
+    #  ГЛАВНЫЙ МЕТОД ГЕНЕРАЦИИ
+    # ──────────────────────────────────────────────
+    def generate(self, mode: str, topic: str, volume: str, style: str,
+                 author_info: dict = None, wiki_data: list = None) -> str:
+
         if not self.is_ready:
-            return f"""❌ API не настроен или ключ недействителен.
+            return (f"❌ API не настроен или ключ недействителен.\n\n"
+                    f"Текущая модель: {self.model_name or 'не найдена'}")
 
-Попробуйте:
-1. Создать новый ключ на aistudio.google.com
-2. Убедитесь что Gemini API доступен в вашем регионе
-3. Проверьте что ключ скопирован полностью
+        prompt = self._build_prompt(mode, topic, volume, style, wiki_data)
 
-Текущая модель: {self.model_name or 'не найдена'}"""
-        
-        prompt = self._build_prompt(mode, topic, volume, style)
-        
         try:
             response = self.model.generate_content(prompt)
             result = response.text
-            
-            if author_info and author_info.get('include_title') and mode in ['referat', 'doklad', 'essay']:
+
+            # Титульная страница
+            if (author_info and author_info.get('include_title')
+                    and mode in ['referat', 'doklad', 'essay']):
                 title_page = self._generate_title_page(topic, author_info, mode)
                 result = title_page + "\n\n" + result
-            
+
             return result
-            
+
         except Exception as e:
             error_msg = str(e)
             if "blocked" in error_msg.lower():
@@ -104,23 +100,75 @@ class AIGenerator:
                 return "❌ Превышен лимит запросов. Подождите немного."
             else:
                 return f"❌ Ошибка генерации: {error_msg}"
-    
-    def _build_prompt(self, mode: str, topic: str, volume: str, style: str) -> str:
-        
+
+    # ──────────────────────────────────────────────
+    #  ПОСТРОЕНИЕ ПРОМПТА
+    # ──────────────────────────────────────────────
+    def _build_prompt(self, mode, topic, volume, style, wiki_data=None):
+        """Строит промпт, при наличии wiki_data — добавляет источники"""
+
+        base_prompt = self._base_prompt(mode, topic, volume, style)
+
+        if wiki_data:
+            wiki_block = self._format_wiki_block(wiki_data)
+            return f"{wiki_block}\n\n{base_prompt}"
+
+        return base_prompt
+
+    # ──────────────────────────────────────────────
+    #  ФОРМАТИРОВАНИЕ БЛОКА ВИКИПЕДИИ
+    # ──────────────────────────────────────────────
+    def _format_wiki_block(self, wiki_data: list) -> str:
+        """Превращает список статей в текстовый блок-источник для промпта"""
+
+        lines = []
+        lines.append("📚 МАТЕРИАЛЫ ИЗ ВИКИПЕДИИ — ИСПОЛЬЗУЙ КАК ОСНОВНОЙ ИСТОЧНИК")
+        lines.append("=" * 60)
+
+        wiki_refs = []
+
+        for i, article in enumerate(wiki_data, 1):
+            lines.append(f"\n📄 Источник {i}: {article['title']}")
+            lines.append(f"   URL: {article['url']}")
+            lines.append("-" * 50)
+            lines.append(article['content'])
+            lines.append("=" * 60)
+
+            wiki_refs.append(
+                f"{article['title']} // Википедия — свободная энциклопедия. "
+                f"URL: {article['url']}"
+            )
+
+        lines.append("\n⚠️ ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:")
+        lines.append("1. Основывайся ТОЛЬКО на фактах из источников выше.")
+        lines.append("2. НЕ придумывай информацию, которой нет в источниках.")
+        lines.append("3. Ссылайся на данные из Википедии в тексте.")
+        lines.append("4. В СПИСОК ЛИТЕРАТУРЫ включи:")
+        for ref in wiki_refs:
+            lines.append(f"   • {ref}")
+        lines.append("")
+
+        return "\n".join(lines)
+
+    # ──────────────────────────────────────────────
+    #  БАЗОВЫЕ ПРОМПТЫ (без изменений по структуре)
+    # ──────────────────────────────────────────────
+    def _base_prompt(self, mode, topic, volume, style):
+
         volume_text = {
             "short": "Напиши кратко, 1-2 страницы.",
             "medium": "Напиши средний объём, 3-5 страниц.",
             "long": "Напиши подробно, 6-10 страниц.",
             "very_long": "Напиши очень подробно, 10-15 страниц."
         }.get(volume, "Средний объём.")
-        
+
         style_text = {
             "scientific": "Научный академический стиль.",
             "simple": "Простой понятный язык.",
             "school": "Язык для школьника.",
             "university": "Язык для студента."
         }.get(style, "Научный стиль.")
-        
+
         prompts = {
             "referat": f"""Напиши полный реферат на тему: "{topic}"
 
@@ -355,49 +403,50 @@ class AIGenerator:
 
 Пиши с душой и личной позицией!"""
         }
-        
+
         return prompts.get(mode, prompts["referat"])
-    
-    def _generate_title_page(self, topic: str, author_info: dict, mode: str) -> str:
-        
-        work_type = {"referat": "РЕФЕРАТ", "doklad": "ДОКЛАД", "essay": "ЭССЕ"}.get(mode, "РЕФЕРАТ")
-        
+
+    # ──────────────────────────────────────────────
+    #  ТИТУЛЬНАЯ СТРАНИЦА
+    # ──────────────────────────────────────────────
+    def _generate_title_page(self, topic, author_info, mode):
+
+        work_type = {
+            "referat": "РЕФЕРАТ",
+            "doklad": "ДОКЛАД",
+            "essay": "ЭССЕ"
+        }.get(mode, "РЕФЕРАТ")
+
         edu_type = author_info.get('edu_type', 'Студент')
         grade = author_info.get('grade', '1')
         name = author_info.get('name', '')
         institution = author_info.get('institution', '')
         group = author_info.get('group', '')
         teacher = author_info.get('teacher', '')
-        
-        grade_text = f"{grade} класса" if edu_type == "Ученик" else f"{grade} курса"
+
+        grade_text = (f"{grade} класса" if edu_type == "Ученик"
+                      else f"{grade} курса")
         year = datetime.now().year
-        
+
         lines = [
-            "=" * 60,
-            "",
+            "=" * 60, "",
             institution.upper() if institution else "[УЧЕБНОЕ ЗАВЕДЕНИЕ]",
-            "",
-            "-" * 60,
-            "",
-            work_type,
-            "",
+            "", "-" * 60, "",
+            work_type, "",
             "на тему:",
             f'«{topic}»',
-            "",
-            "-" * 60,
-            "",
+            "", "-" * 60, "",
             "Выполнил(а):",
             f"{edu_type} {grade_text}",
         ]
-        
+
         if name:
             lines.append(name)
         if group:
             lines.append(f"Группа: {group}")
         if teacher:
-            lines.append("")
-            lines.append(f"Преподаватель: {teacher}")
-        
+            lines.extend(["", f"Преподаватель: {teacher}"])
+
         lines.extend(["", "-" * 60, "", f"{year} год", "", "=" * 60])
-        
+
         return "\n".join(lines)

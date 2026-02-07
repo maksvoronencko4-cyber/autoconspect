@@ -1,2 +1,2 @@
 from .ai_generator import AIGenerator
-from .wiki_source import WikiSource
+from .wikipedia_source import WikipediaSource

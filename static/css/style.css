@@ -54,8 +54,19 @@ body {
 }
 
 .version {
+    display: block;
     font-size: 0.8rem;
     color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.wiki-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #10b981, #059669);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: white;
 }
 
 .menu-section {
@@ -89,6 +100,25 @@ body {
 
 .menu-btn.active {
     background: var(--primary);
+}
+
+/* Информационный блок */
+.info-box {
+    margin-top: auto;
+    padding: 15px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+}
+
+.info-box p {
+    font-size: 0.8rem;
+    color: #10b981;
+    margin-bottom: 5px;
+}
+
+.info-box p:last-child {
+    margin-bottom: 0;
 }
 
 /* Основная область */
@@ -352,6 +382,11 @@ body {
     to { transform: rotate(360deg); }
 }
 
+#loading-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
 /* Адаптивность */
 @media (max-width: 1024px) {
     .author-grid {
@@ -405,5 +440,9 @@ body {
     .btn {
         flex: 1;
         min-width: 120px;
+    }
+    
+    .info-box {
+        display: none;
     }
 }

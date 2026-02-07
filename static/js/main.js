@@ -1,193 +1,334 @@
-// ═══════════════════════════════════════════
-//  АвтоКонспект Web + Wikipedia — JavaScript
-// ═══════════════════════════════════════════
+// АвтоКонспект Web + Wikipedia — JavaScript
 
-document.addEventListener('DOMContentLoaded', function () {
-
-    // ── Элементы ──
-    const menuBtns       = document.querySelectorAll('.menu-btn');
-    const modeTitle      = document.getElementById('mode-title');
-    const modeSubtitle   = document.getElementById('mode-subtitle');
-    const inputLabel     = document.getElementById('input-label');
-    const authorSection  = document.getElementById('author-section');
-    const topicInput     = document.getElementById('topic-input');
-    const volumeSelect   = document.getElementById('volume');
-    const styleSelect    = document.getElementById('style');
-    const generateBtn    = document.getElementById('generate-btn');
-    const clearBtn       = document.getElementById('clear-btn');
-    const copyBtn        = document.getElementById('copy-btn');
-    const downloadBtn    = document.getElementById('download-btn');
-    const resultDiv      = document.getElementById('result');
-    const loadingDiv     = document.getElementById('loading');
-    const loadingSub     = document.getElementById('loading-sub');
-    const statsSpan      = document.getElementById('stats');
-
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===== ЭЛЕМЕНТЫ =====
+    const menuBtns = document.querySelectorAll('.menu-btn');
+    const modeTitle = document.getElementById('mode-title');
+    const modeSubtitle = document.getElementById('mode-subtitle');
+    const inputLabel = document.getElementById('input-label');
+    const authorSection = document.getElementById('author-section');
+    const topicInput = document.getElementById('topic-input');
+    const volumeSelect = document.getElementById('volume');
+    const styleSelect = document.getElementById('style');
+    const generateBtn = document.getElementById('generate-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const resultDiv = document.getElementById('result');
+    const loadingDiv = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const statsSpan = document.getElementById('stats');
+    
     // Wikipedia элементы
-    const useWikiCheck   = document.getElementById('use-wiki');
-    const wikiBody       = document.getElementById('wiki-body');
-    const wikiQueryInput = document.getElementById('wiki-query');
-    const wikiLangSelect = document.getElementById('wiki-lang');
-    const wikiSearchBtn  = document.getElementById('wiki-search-btn');
-    const wikiLoading    = document.getElementById('wiki-loading');
-    const wikiResults    = document.getElementById('wiki-results');
-    const wikiSelectedBar = document.getElementById('wiki-selected-bar');
-    const wikiCountSpan  = document.getElementById('wiki-count');
-    const wikiBadge      = document.getElementById('wiki-badge');
-    const wikiBadgeCount = document.getElementById('wiki-badge-count');
-
+    const useWikipediaCheckbox = document.getElementById('use-wikipedia');
+    const wikiSection = document.getElementById('wiki-section');
+    const wikiSearchInput = document.getElementById('wiki-search-input');
+    const wikiSearchBtn = document.getElementById('wiki-search-btn');
+    const wikiResults = document.getElementById('wiki-results');
+    const wikiSelected = document.getElementById('wiki-selected');
+    const selectedWikiTitle = document.getElementById('selected-wiki-title');
+    const clearWikiBtn = document.getElementById('clear-wiki-btn');
+    const wikiStatus = document.getElementById('wiki-status');
+    
+    // ===== СОСТОЯНИЕ =====
     let currentMode = 'referat';
-
-    // ── Информация о режимах ──
+    let selectedWikiArticle = null;
+    
+    // ===== ИНФОРМАЦИЯ О РЕЖИМАХ =====
     const modeInfo = {
-        referat:  { title: '📄 Генератор рефератов',  subtitle: 'Введите тему и получите готовый реферат',           inputLabel: '📝 Тема реферата:',    showAuthor: true  },
-        conspect: { title: '📝 Генератор конспектов',  subtitle: 'Введите тему или вставьте текст',                  inputLabel: '📝 Тема или текст:',   showAuthor: false },
-        doklad:   { title: '📊 План доклада',          subtitle: 'Получите структурированный план выступления',      inputLabel: '📝 Тема доклада:',     showAuthor: true  },
-        question: { title: '❓ Ответ на вопрос',       subtitle: 'Задайте вопрос и получите развёрнутый ответ',      inputLabel: '📝 Ваш вопрос:',      showAuthor: false },
-        retell:   { title: '📖 Пересказ текста',       subtitle: 'Вставьте текст для краткого пересказа',            inputLabel: '📝 Текст для пересказа:', showAuthor: false },
-        essay:    { title: '✍️ Генератор эссе',        subtitle: 'Создание творческих работ и сочинений',            inputLabel: '📝 Тема эссе:',       showAuthor: true  }
+        referat: {
+            title: '📄 Генератор рефератов',
+            subtitle: 'Данные из Википедии → AI создаёт реферат',
+            inputLabel: '📝 Тема реферата:',
+            showAuthor: true
+        },
+        conspect: {
+            title: '📝 Генератор конспектов',
+            subtitle: 'Структурированный конспект на основе Википедии',
+            inputLabel: '📝 Тема конспекта:',
+            showAuthor: false
+        },
+        doklad: {
+            title: '📊 Генератор докладов',
+            subtitle: 'Текст для выступления с фактами из Википедии',
+            inputLabel: '📝 Тема доклада:',
+            showAuthor: true
+        },
+        question: {
+            title: '❓ Ответ на вопрос',
+            subtitle: 'Развёрнутый ответ на основе Википедии',
+            inputLabel: '📝 Ваш вопрос:',
+            showAuthor: false
+        },
+        retell: {
+            title: '📖 Пересказ',
+            subtitle: 'Пересказ материала из Википедии',
+            inputLabel: '📝 Тема для пересказа:',
+            showAuthor: false
+        },
+        essay: {
+            title: '✍️ Генератор эссе',
+            subtitle: 'Эссе с опорой на факты из Википедии',
+            inputLabel: '📝 Тема эссе:',
+            showAuthor: true
+        }
     };
-
-    // ══════════════════════════════════════
-    //  ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ
-    // ══════════════════════════════════════
+    
+    // ===== ПЕРЕКЛЮЧЕНИЕ РЕЖИМА =====
     menuBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function() {
             menuBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-
+            
             currentMode = this.dataset.mode;
             const info = modeInfo[currentMode];
-
-            modeTitle.textContent    = info.title;
+            
+            modeTitle.textContent = info.title;
             modeSubtitle.textContent = info.subtitle;
-            inputLabel.textContent   = info.inputLabel;
+            inputLabel.textContent = info.inputLabel;
+            
             authorSection.style.display = info.showAuthor ? 'block' : 'none';
         });
     });
-
-    // ══════════════════════════════════════
-    //  WIKIPEDIA — TOGGLE
-    // ══════════════════════════════════════
-    useWikiCheck.addEventListener('change', function () {
-        wikiBody.style.display = this.checked ? 'block' : 'none';
+    
+    // ===== WIKIPEDIA TOGGLE =====
+    useWikipediaCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            wikiSection.style.display = 'block';
+            wikiSection.classList.add('wiki-active');
+        } else {
+            wikiSection.style.display = 'none';
+            wikiSection.classList.remove('wiki-active');
+            clearWikiSelection();
+        }
     });
-
-    // ══════════════════════════════════════
-    //  WIKIPEDIA — ПОИСК
-    // ══════════════════════════════════════
-    wikiSearchBtn.addEventListener('click', doWikiSearch);
-    wikiQueryInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); doWikiSearch(); }
+    
+    // ===== ПОИСК В WIKIPEDIA =====
+    wikiSearchBtn.addEventListener('click', searchWikipedia);
+    wikiSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchWikipedia();
+        }
     });
-
-    async function doWikiSearch() {
-        // Берём запрос из wiki-input, если пуст — из topic-input
-        let query = wikiQueryInput.value.trim();
-        if (!query) query = topicInput.value.trim();
-        if (!query) { alert('Введите тему или поисковый запрос!'); return; }
-
-        const lang = wikiLangSelect.value;
-
-        wikiSearchBtn.disabled = true;
-        wikiSearchBtn.textContent = '⏳…';
-        wikiLoading.classList.remove('hidden');
-        wikiResults.innerHTML = '';
-
+    
+    async function searchWikipedia() {
+        const query = wikiSearchInput.value.trim();
+        
+        if (!query) {
+            alert('Введите поисковый запрос!');
+            return;
+        }
+        
+        wikiStatus.textContent = '🔍 Поиск...';
+        wikiStatus.className = 'wiki-status searching';
+        wikiResults.innerHTML = '<div class="wiki-loading">Поиск статей...</div>';
+        
         try {
-            const resp = await fetch('/wiki/search', {
+            const response = await fetch('/wiki/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query, lang })
+                body: JSON.stringify({ query: query })
             });
-            const data = await resp.json();
-
+            
+            const data = await response.json();
+            
             if (data.success && data.results.length > 0) {
-                renderWikiResults(data.results);
+                displayWikiResults(data.results);
+                wikiStatus.textContent = `✅ Найдено: ${data.results.length}`;
+                wikiStatus.className = 'wiki-status success';
             } else {
-                wikiResults.innerHTML =
-                    '<p class="wiki-empty">🔍 Ничего не найдено. Попробуйте другой запрос или язык.</p>';
+                wikiResults.innerHTML = '<div class="wiki-no-results">Статьи не найдены. Попробуйте другой запрос.</div>';
+                wikiStatus.textContent = '❌ Не найдено';
+                wikiStatus.className = 'wiki-status error';
             }
-        } catch (err) {
-            wikiResults.innerHTML =
-                '<p class="wiki-error">❌ Ошибка соединения с Википедией</p>';
+            
+        } catch (error) {
+            wikiResults.innerHTML = `<div class="wiki-error">Ошибка поиска: ${error.message}</div>`;
+            wikiStatus.textContent = '❌ Ошибка';
+            wikiStatus.className = 'wiki-status error';
         }
-
-        wikiLoading.classList.add('hidden');
-        wikiSearchBtn.disabled = false;
-        wikiSearchBtn.textContent = '🔍 Найти';
     }
-
-    // ── Отрисовка результатов ──
-    function renderWikiResults(results) {
-        wikiResults.innerHTML = results.map(r => {
-            const words = r.wordcount ? r.wordcount.toLocaleString('ru') + ' сл.' : '';
-            return `
-            <label class="wiki-card">
-                <input type="checkbox" class="wiki-cb" value="${escapeHtml(r.title)}">
-                <div class="wiki-card-body">
-                    <span class="wiki-card-title">${escapeHtml(r.title)}</span>
-                    <span class="wiki-card-snippet">${escapeHtml(r.snippet)}</span>
-                    <span class="wiki-card-meta">${words}</span>
-                </div>
-            </label>`;
-        }).join('');
-
-        // Слушатели на чекбоксы
-        document.querySelectorAll('.wiki-cb').forEach(cb => {
-            cb.addEventListener('change', updateWikiCount);
+    
+    function displayWikiResults(results) {
+        wikiResults.innerHTML = '';
+        
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'wiki-result-item';
+            item.innerHTML = `
+                <div class="wiki-result-title">${result.title}</div>
+                <div class="wiki-result-desc">${result.description || 'Нет описания'}</div>
+            `;
+            
+            item.addEventListener('click', () => selectWikiArticle(result));
+            wikiResults.appendChild(item);
         });
-
-        updateWikiCount();
     }
-
-    function updateWikiCount() {
-        const checked = document.querySelectorAll('.wiki-cb:checked');
-        wikiCountSpan.textContent = checked.length;
-
-        if (checked.length > 0) {
-            wikiSelectedBar.classList.remove('hidden');
-        } else {
-            wikiSelectedBar.classList.add('hidden');
+    
+    function selectWikiArticle(article) {
+        selectedWikiArticle = article.title;
+        
+        // Обновляем UI
+        selectedWikiTitle.textContent = article.title;
+        wikiSelected.style.display = 'block';
+        wikiResults.innerHTML = '';
+        
+        // Автозаполнение темы
+        if (!topicInput.value.trim()) {
+            topicInput.value = article.title;
         }
-
-        // Ограничиваем выбор до 5
-        if (checked.length >= 5) {
-            document.querySelectorAll('.wiki-cb:not(:checked)')
-                .forEach(cb => cb.disabled = true);
-        } else {
-            document.querySelectorAll('.wiki-cb')
-                .forEach(cb => cb.disabled = false);
-        }
+        
+        wikiStatus.textContent = '📌 Статья выбрана';
+        wikiStatus.className = 'wiki-status selected';
+        
+        // Подсветка выбранной статьи
+        wikiSelected.classList.add('pulse');
+        setTimeout(() => wikiSelected.classList.remove('pulse'), 500);
     }
-
-    function getSelectedWikiTitles() {
-        return Array.from(document.querySelectorAll('.wiki-cb:checked'))
-            .map(cb => cb.value);
+    
+    function clearWikiSelection() {
+        selectedWikiArticle = null;
+        wikiSelected.style.display = 'none';
+        selectedWikiTitle.textContent = '';
+        wikiStatus.textContent = 'Готов к поиску';
+        wikiStatus.className = 'wiki-status';
     }
-
-    function escapeHtml(text) {
-        const d = document.createElement('div');
-        d.textContent = text;
-        return d.innerHTML;
-    }
-
-    // ══════════════════════════════════════
-    //  ГЕНЕРАЦИЯ
-    // ══════════════════════════════════════
-    generateBtn.addEventListener('click', async function () {
+    
+    clearWikiBtn.addEventListener('click', clearWikiSelection);
+    
+    // ===== ГЕНЕРАЦИЯ =====
+    generateBtn.addEventListener('click', async function() {
         const topic = topicInput.value.trim();
-        if (!topic) { alert('Введите тему или текст!'); return; }
-
-        // Собираем Wikipedia
-        const useWiki    = useWikiCheck.checked;
-        const wikiTitles = useWiki ? getSelectedWikiTitles() : [];
-        const wikiLang   = wikiLangSelect.value;
-
-        // UI — загрузка
+        
+        if (!topic) {
+            alert('Введите тему!');
+            return;
+        }
+        
+        // Показываем загрузку
         resultDiv.style.display = 'none';
-        wikiBadge.classList.add('hidden');
         loadingDiv.classList.remove('hidden');
         generateBtn.disabled = true;
-
-        if (wikiTitles.length > 0) {
+        generateBtn.textContent = '⏳ Генерация...';
+        
+        // Обновляем текст загрузки
+        const useWiki = useWikipediaCheckbox.checked;
+        if (useWiki) {
+            loadingText.textContent = '📖 Получаем данные из Википедии...';
+            setTimeout(() => {
+                loadingText.textContent = '✨ AI обрабатывает информацию...';
+            }, 2000);
+        } else {
+            loadingText.textContent = '✨ Генерация текста...';
+        }
+        
+        // Собираем данные
+        const data = {
+            mode: currentMode,
+            topic: topic,
+            volume: volumeSelect.value,
+            style: styleSelect.value,
+            use_wikipedia: useWiki,
+            wiki_article_title: selectedWikiArticle,
+            author_info: {
+                name: document.getElementById('author-name').value,
+                edu_type: document.getElementById('edu-type').value,
+                grade: document.getElementById('grade').value,
+                institution: document.getElementById('institution').value,
+                group: document.getElementById('group').value,
+                teacher: document.getElementById('teacher').value,
+                include_title: document.getElementById('include-title').checked
+            }
+        };
+        
+        try {
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
             
+            const result = await response.json();
+            
+            if (result.success) {
+                resultDiv.textContent = result.result;
+                statsSpan.textContent = `📊 ${result.stats.words} слов | ${result.stats.chars} символов | ~${result.stats.pages} стр.`;
+            } else {
+                resultDiv.textContent = 'Ошибка: ' + result.error;
+            }
+            
+        } catch (error) {
+            resultDiv.textContent = 'Ошибка соединения: ' + error.message;
+        }
+        
+        // Скрываем загрузку
+        loadingDiv.classList.add('hidden');
+        resultDiv.style.display = 'block';
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Сгенерировать';
+    });
+    
+    // ===== ОЧИСТКА =====
+    clearBtn.addEventListener('click', function() {
+        topicInput.value = '';
+        resultDiv.textContent = '';
+        statsSpan.textContent = '';
+        clearWikiSelection();
+        wikiSearchInput.value = '';
+        wikiResults.innerHTML = '';
+    });
+    
+    // ===== КОПИРОВАНИЕ =====
+    copyBtn.addEventListener('click', function() {
+        const text = resultDiv.textContent;
+        
+        if (!text) {
+            alert('Нет текста для копирования!');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Скопировано!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        });
+    });
+    
+    // ===== СКАЧИВАНИЕ =====
+    downloadBtn.addEventListener('click', function() {
+        const text = resultDiv.textContent;
+        
+        if (!text) {
+            alert('Нет текста для скачивания!');
+            return;
+        }
+        
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentMode}_${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+    
+    // ===== АВТОПОИСК ПРИ ВВОДЕ ТЕМЫ =====
+    let searchTimeout;
+    topicInput.addEventListener('input', function() {
+        if (!useWikipediaCheckbox.checked) return;
+        
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length >= 3) {
+            searchTimeout = setTimeout(() => {
+                wikiSearchInput.value = query;
+                // Не запускаем автопоиск, только заполняем поле
+            }, 500);
+        }
+    });
+    
+});
